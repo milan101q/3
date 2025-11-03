@@ -20,6 +20,7 @@ const translations = {
         analyzeButton: 'تحلیل عکس گیاه',
         reminderButton: 'یادآور',
         shareButton: 'اشتراک',
+        takePhotoButton: 'گرفتن عکس با دوربین',
         reminderSetNotice: 'یادآور آبیاری برای این گیاه فعال است. می‌توانید آن را در تب "یادآورهای من" مدیریت کنید.',
         welcome: {
             title: 'برای شروع، عکسی از گیاه خود آپلود و تحلیل کنید.',
@@ -47,17 +48,26 @@ const translations = {
             saveButton: 'ذخیره یادآور',
             cancelButton: 'لغو'
         },
+        cameraModal: {
+            title: 'گرفتن عکس از گیاه',
+            captureButton: 'ثبت عکس',
+            cancelButton: 'لغو',
+            unsupported: 'متاسفانه مرورگر شما از دسترسی به دوربین پشتیبانی نمی‌کند.',
+            permissionError: 'دسترسی به دوربین ممکن نیست. لطفاً اجازه دسترسی را در تنظیمات مرورگر خود فعال کنید.'
+        },
         errors: {
             selectPhoto: 'لطفاً ابتدا یک عکس انتخاب کنید.',
             analysisError: 'خطایی در تحلیل تصویر رخ داد. لطفاً دوباره تلاش کنید.',
             serverError: 'خطایی در ارتباط با سرور رخ داد. لطفاً دوباره تلاش کنید.',
-            speechRecognition: 'خطایی در تشخیص گفتار رخ داد.'
+            speechRecognition: 'خطایی در تشخیص گفتار رخ داد.',
+            cameraError: 'خطایی هنگام استفاده از دوربین رخ داد.'
         },
         aria: {
             stopRecording: 'توقف ضبط',
             startRecording: 'شروع ضبط',
             sendMessage: 'ارسال پیام',
-            deleteReminder: 'حذف یادآور برای {plantName}'
+            deleteReminder: 'حذف یادآور برای {plantName}',
+            takePhoto: 'گرفتن عکس با دوربین'
         },
         share: {
             title: '🌿 گیاه شناسایی شده: {plantName}',
@@ -78,6 +88,7 @@ const translations = {
         analyzeButton: 'Analyze Plant Photo',
         reminderButton: 'Reminder',
         shareButton: 'Share',
+        takePhotoButton: 'Take a Photo',
         reminderSetNotice: 'A watering reminder is active for this plant. You can manage it in the "My Reminders" tab.',
         welcome: {
             title: 'To get started, upload and analyze a photo of your plant.',
@@ -105,17 +116,26 @@ const translations = {
             saveButton: 'Save Reminder',
             cancelButton: 'Cancel'
         },
+        cameraModal: {
+            title: 'Take a Photo of Your Plant',
+            captureButton: 'Capture Photo',
+            cancelButton: 'Cancel',
+            unsupported: 'Sorry, your browser does not support camera access.',
+            permissionError: 'Camera access is required. Please enable it in your browser settings.'
+        },
         errors: {
             selectPhoto: 'Please select a photo first.',
             analysisError: 'An error occurred while analyzing the image. Please try again.',
             serverError: 'An error occurred while communicating with the server. Please try again.',
-            speechRecognition: 'A speech recognition error occurred.'
+            speechRecognition: 'A speech recognition error occurred.',
+            cameraError: 'An error occurred while using the camera.'
         },
         aria: {
             stopRecording: 'Stop recording',
             startRecording: 'Start recording',
             sendMessage: 'Send message',
-            deleteReminder: 'Delete reminder for {plantName}'
+            deleteReminder: 'Delete reminder for {plantName}',
+            takePhoto: 'Take a photo with your camera'
         },
         share: {
             title: '🌿 Plant Identified: {plantName}',

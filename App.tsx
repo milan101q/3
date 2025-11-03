@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { ChatMessage, Reminder } from './types';
 import { analyzePlantImage, createChatSession, sendMessageToChat } from './services/geminiService';
-import { UploadIcon, SendIcon, SparklesIcon, CalendarIcon, BellIcon, TrashIcon, MicrophoneIcon, ShareIcon } from './components/icons';
+import { UploadIcon, SendIcon, SparklesIcon, CalendarIcon, BellIcon, TrashIcon, MicrophoneIcon, ShareIcon, CameraIcon } from './components/icons';
 import type { Chat } from '@google/genai';
 import { useLanguage, useTranslations } from './i18n';
 
@@ -73,6 +73,110 @@ const ReminderModal: React.FC<{
     );
 };
 
+const CameraModal: React.FC<{
+    onClose: () => void;
+    onPhotoTaken: (file: File) => void;
+    t: any;
+}> = ({ onClose, onPhotoTaken, t }) => {
+    const videoRef = useRef<HTMLVideoElement>(null);
+    const canvasRef = useRef<HTMLCanvasElement>(null);
+    const [stream, setStream] = useState<MediaStream | null>(null);
+    const [cameraError, setCameraError] = useState<string | null>(null);
+
+    useEffect(() => {
+        const startCamera = async () => {
+            if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+                try {
+                    const mediaStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
+                    setStream(mediaStream);
+                    if (videoRef.current) {
+                        videoRef.current.srcObject = mediaStream;
+                    }
+                } catch (err: any) {
+                    console.error("Error accessing camera with facingMode: ", err);
+                     try {
+                       const mediaStream = await navigator.mediaDevices.getUserMedia({ video: true });
+                       setStream(mediaStream);
+                        if (videoRef.current) {
+                            videoRef.current.srcObject = mediaStream;
+                        }
+                    } catch (fallbackErr: any) {
+                       if (fallbackErr.name === 'NotAllowedError' || fallbackErr.name === 'PermissionDeniedError') {
+                            setCameraError(t.cameraModal.permissionError);
+                        } else {
+                            setCameraError(t.cameraModal.unsupported);
+                        }
+                    }
+                }
+            } else {
+                setCameraError(t.cameraModal.unsupported);
+            }
+        };
+
+        startCamera();
+
+        return () => {
+            if (stream) {
+                stream.getTracks().forEach(track => track.stop());
+            }
+        };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
+
+    const handleCapture = () => {
+        if (videoRef.current && canvasRef.current) {
+            const video = videoRef.current;
+            const canvas = canvasRef.current;
+            const context = canvas.getContext('2d');
+
+            if (context) {
+                canvas.width = video.videoWidth;
+                canvas.height = video.videoHeight;
+                context.drawImage(video, 0, 0, video.videoWidth, video.videoHeight);
+                
+                canvas.toBlob(blob => {
+                    if (blob) {
+                        const file = new File([blob], "plant-photo.jpg", { type: "image/jpeg" });
+                        onPhotoTaken(file);
+                    }
+                }, 'image/jpeg');
+            }
+        }
+    };
+    
+    const handleClose = () => {
+      if (stream) {
+          stream.getTracks().forEach(track => track.stop());
+      }
+      onClose();
+    };
+
+    return (
+        <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 p-4" dir="ltr">
+            <div className="bg-white rounded-lg shadow-xl w-full max-w-lg text-center p-6 relative">
+                <h3 className="text-lg font-bold text-gray-800 mb-4">{t.cameraModal.title}</h3>
+                <div className="relative bg-gray-900 rounded-md overflow-hidden mb-4 aspect-video flex items-center justify-center">
+                    <video ref={videoRef} autoPlay playsInline className="w-full h-full object-cover"></video>
+                    {cameraError && (
+                        <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-50 text-white p-4">
+                            <p>{cameraError}</p>
+                        </div>
+                    )}
+                </div>
+                <div className="flex justify-between">
+                    <button onClick={handleCapture} disabled={!!cameraError} className="bg-green-600 text-white font-bold py-2 px-6 rounded-lg hover:bg-green-700 disabled:bg-gray-400">
+                        {t.cameraModal.captureButton}
+                    </button>
+                    <button onClick={handleClose} className="bg-gray-200 text-gray-700 font-bold py-2 px-6 rounded-lg hover:bg-gray-300">
+                        {t.cameraModal.cancelButton}
+                    </button>
+                </div>
+                <canvas ref={canvasRef} className="hidden"></canvas>
+            </div>
+        </div>
+    );
+};
+
 
 const App: React.FC = () => {
   const { lang, setLang } = useLanguage();
@@ -86,6 +190,7 @@ const App: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [plantName, setPlantName] = useState<string | null>(null);
   const [isReminderModalOpen, setIsReminderModalOpen] = useState(false);
+  const [isCameraOpen, setIsCameraOpen] = useState(false);
   const [reminders, setReminders] = useState<(Reminder & { nextWateringDate: Date })[]>([]);
   const [isListening, setIsListening] = useState(false);
   const [activeTab, setActiveTab] = useState<'chat' | 'reminders'>('chat');
@@ -94,6 +199,8 @@ const App: React.FC = () => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const chatContainerRef = useRef<HTMLDivElement>(null);
   const recognitionRef = useRef<SpeechRecognition | null>(null);
+  
+  const isCameraSupported = typeof navigator.mediaDevices?.getUserMedia === 'function';
 
   useEffect(() => {
     document.title = t.appTitle;
@@ -180,6 +287,17 @@ const App: React.FC = () => {
       setActiveTab('chat');
     }
   };
+
+  const handlePhotoTaken = (file: File) => {
+    setImage(file);
+    setImagePreview(URL.createObjectURL(file));
+    setMessages([]);
+    setError(null);
+    setPlantName(null);
+    setActiveTab('chat');
+    setIsCameraOpen(false);
+  };
+
 
   const handleAnalyzeClick = async () => {
     if (!image) {
@@ -318,6 +436,7 @@ const App: React.FC = () => {
   return (
     <div className="flex flex-col h-screen bg-green-50">
       {isReminderModalOpen && plantName && <ReminderModal plantName={plantName} onSave={handleSaveReminder} onClose={() => setIsReminderModalOpen(false)} t={t} />}
+      {isCameraOpen && <CameraModal onClose={() => setIsCameraOpen(false)} onPhotoTaken={handlePhotoTaken} t={t} />}
       <header className="bg-white shadow-md p-4 flex items-center justify-between border-b-2 border-green-200">
         <h1 className="text-2xl font-bold text-green-800">🌿 {t.appTitle}</h1>
         <div className="flex items-center space-x-2">
@@ -348,7 +467,7 @@ const App: React.FC = () => {
                   <h2 className="text-xl font-semibold text-center text-gray-700 mb-4">{t.identifyYourPlant}</h2>
                   <div 
                       className="relative border-2 border-dashed border-green-300 rounded-lg p-6 text-center cursor-pointer hover:border-green-500 hover:bg-green-50 transition-colors"
-                      onClick={() => fileInputRef.current?.click()}
+                      onClick={() => !imagePreview && fileInputRef.current?.click()}
                   >
                       <input type="file" ref={fileInputRef} className="hidden" accept="image/*" onChange={handleImageChange} />
                       {imagePreview ? (
@@ -361,6 +480,24 @@ const App: React.FC = () => {
                           </div>
                       )}
                   </div>
+
+                  {isCameraSupported && !image && (
+                      <>
+                        <div className="flex items-center my-4">
+                            <div className="flex-grow border-t border-gray-300"></div>
+                            <span className="flex-shrink mx-4 text-gray-500 text-sm">{lang === 'fa' ? 'یا' : 'OR'}</span>
+                            <div className="flex-grow border-t border-gray-300"></div>
+                        </div>
+                        <button
+                            onClick={() => { setError(null); setIsCameraOpen(true); }}
+                            className="w-full bg-sky-500 text-white font-bold py-3 px-4 rounded-lg flex items-center justify-center hover:bg-sky-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-sky-500 transition-all"
+                            aria-label={t.aria.takePhoto}
+                        >
+                            <CameraIcon className="w-6 h-6 me-2" />
+                            <span>{t.takePhotoButton}</span>
+                        </button>
+                      </>
+                  )}
                   
                   {image && (
                       <button
